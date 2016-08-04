@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #define MAX_BUFFER_SIZE 256
 
@@ -45,7 +46,7 @@ static char *token2string(Token *token) {
     case tLPAREN:
       return "(";
     case tRPAREN:
-      return "(";
+      return ")";
     case tNUMBER: {
       char *s = malloc(div(token->ival, 10).quot + 1);
       sprintf(s, "%d", token->ival);
@@ -57,9 +58,15 @@ static char *token2string(Token *token) {
   return NULL;
 }
 
-void error(char *s) __attribute__((noreturn));
-void error(char *s) {
-  printf("Error: %s\n", s);
+#define error(...) errorf(__FILE__, __LINE__, __VA_ARGS__)
+void errorf(char *file, int line, char *fmt, ...) __attribute__((noreturn));
+void errorf(char *file, int line, char *fmt, ...) {
+  fprintf(stderr, "%s:%d: ", file, line);
+  va_list args;
+  va_start(args, fmt);
+  vfprintf(stderr, fmt, args);
+  fprintf(stderr, "\n");
+  va_end(args);
   exit(1);
 }
 
@@ -68,6 +75,7 @@ static Token *read_number(char c) {
   while ((c = getc(stdin)) != EOF && isdigit(c)) {
     i = i * 10 + c - '0';
   }
+  if (c) ungetc(c, stdin);
   return make_number(i);
 }
 
@@ -85,8 +93,17 @@ static Token *read_symbol(char c) {
   return make_symbol(s);
 }
 
+char getc_without_spaces() {
+  char c;
+  while ((c = getc(stdin)) != EOF) {
+    if (isspace(c) || c == '\r' || c == '\n') continue;
+    return c;
+  }
+  return EOF;
+}
+
 Token *read_token() {
-  char c = getc(stdin);
+  char c = getc_without_spaces();
   if (c == EOF) return NULL;
   switch (c) {
     case '0':
@@ -157,7 +174,7 @@ Token *read_token() {
     case 'Z':
       return read_symbol(c);
     default:
-      error("Internal error");
+      error("Invalid character for Token: %c", c);
   }
 }
 
