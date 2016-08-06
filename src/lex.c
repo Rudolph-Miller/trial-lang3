@@ -1,19 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdarg.h>
+#include "trial-lang3.h"
 
 #define MAX_BUFFER_SIZE 256
 
-enum { tLPAREN, tRPAREN, tNUMBER, tSYMBOL };
-
-typedef struct {
-  int type;
-  union {
-    char *sval;
-    int ival;
-  };
-} Token;
+Token *ungotten = NULL;
 
 static Token *make_number(int i) {
   Token *token = malloc(sizeof(Token));
@@ -41,7 +33,8 @@ static Token *make_symbol(char *s) {
   return token;
 }
 
-static char *token2string(Token *token) {
+char *token2string(Token *token) {
+  if (!token) error("Token is NULL");
   switch (token->type) {
     case tLPAREN:
       return "(";
@@ -55,19 +48,7 @@ static char *token2string(Token *token) {
     case tSYMBOL:
       return token->sval;
   }
-  return NULL;
-}
-
-#define error(...) errorf(__FILE__, __LINE__, __VA_ARGS__)
-void errorf(char *file, int line, char *fmt, ...) __attribute__((noreturn));
-void errorf(char *file, int line, char *fmt, ...) {
-  fprintf(stderr, "%s:%d: ", file, line);
-  va_list args;
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  fprintf(stderr, "\n");
-  va_end(args);
-  exit(1);
+  error("Invalid token");
 }
 
 static Token *read_number(char c) {
@@ -83,10 +64,10 @@ static Token *read_symbol(char c) {
   char *s = malloc(MAX_BUFFER_SIZE);
   int i = 0;
   s[i++] = c;
-  while ((c = getc(stdin)) != EOF) {
+  while ((c = getc(stdin)) != EOF && !isspace(c)) {
     s[i++] = c;
     if (i >= MAX_BUFFER_SIZE) {
-      error("Symbol is too long.");
+      error("Too long symbol");
     }
   }
   s[i] = '\0';
@@ -103,6 +84,11 @@ char getc_without_spaces() {
 }
 
 Token *read_token() {
+  if (ungotten) {
+    Token *token = ungotten;
+    ungotten = NULL;
+    return token;
+  }
   char c = getc_without_spaces();
   if (c == EOF) return NULL;
   switch (c) {
@@ -178,18 +164,13 @@ Token *read_token() {
   }
 }
 
-char *tl3_read() {
-  Token *token;
-  char *buf = malloc(MAX_BUFFER_SIZE);
-  int i = 0;
-  while ((token = read_token()) != NULL) {
-    char *s = token2string(token);
-    int j = 0;
-    while (s[j]) {
-      buf[i++] = s[j++];
-      if (i >= MAX_BUFFER_SIZE) error("MAX_BUFFER_SIZE");
-    }
-  }
-  buf[i] = '\0';
-  return buf;
+void unread_token(Token *token) {
+  if (ungotten) error("Already ungotten token: %s", token2string(ungotten));
+  ungotten = token;
+}
+
+Token *peek_token() {
+  Token *token = read_token();
+  unread_token(token);
+  return token;
 }
