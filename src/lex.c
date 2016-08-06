@@ -3,8 +3,6 @@
 #include <ctype.h>
 #include "trial-lang3.h"
 
-#define MAX_BUFFER_SIZE 256
-
 Token *ungotten = NULL;
 
 static Token *make_number(int i) {
@@ -65,6 +63,10 @@ static Token *read_symbol(char c) {
   int i = 0;
   s[i++] = c;
   while ((c = getc(stdin)) != EOF && !isspace(c)) {
+    if (c == '(' || c == ')') {
+      ungetc(c, stdin);
+      break;
+    }
     s[i++] = c;
     if (i >= MAX_BUFFER_SIZE) {
       error("Too long symbol");

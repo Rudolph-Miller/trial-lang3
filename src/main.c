@@ -2,6 +2,9 @@
 #include "trial-lang3.h"
 
 int main() {
-  printf("%s\n", tl3_read());
+  Ast *ast;
+  while ((ast = tl3_read()) != NULL) {
+    printf("%s\n", ast2string(ast));
+  }
   return 0;
 }
