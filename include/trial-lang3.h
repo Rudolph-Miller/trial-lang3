@@ -56,4 +56,6 @@ typedef struct Ast {
 char *ast2string(Ast *ast);
 Ast *tl3_read();
 
+char *tl3_eval(Ast *ast);
+
 #endif

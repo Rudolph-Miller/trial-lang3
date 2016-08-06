@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS= -Wall -I ./include
 BUILD_DIR=build
-_OBJS=parse.o lex.o string.o util.o
+_OBJS=eval.o parse.o lex.o string.o util.o
 OBJS=$(addprefix $(BUILD_DIR)/,$(_OBJS))
 
 trial-lang3: $(BUILD_DIR)/main.o $(OBJS)
